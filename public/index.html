@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juan Pablo's Soccer Journal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      gap: 24px;
+    }
+    .screen { 
+      width: 100%; 
+      max-width: 500px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .screen-content { padding: 32px; }
+    h1 { color: #2c3e50; margin-bottom: 16px; font-size: 1.8rem; }
+    p { color: #34495e; line-height: 1.6; margin-bottom: 24px; }
+    .form-group { margin-bottom: 20px; }
+    label { 
+      display: block; 
+      margin-bottom: 8px; 
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 212, 0.25);
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2980b9; }
+    button:active { transform: scale(0.98); }
+    .results-list { margin-top: 24px; }
+    .result-item {
+      background: #f8f9fa;
+      margin: 12px 0;
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid #3498db;
+    }
+    .result-item:nth-child(even) { background: #f1f3f5; }
+    .no-results { 
+      text-align: center; 
+      color: #95a5a6; 
+      font-style: italic;
+      padding: 40px 20px;
+    }
+    .menu-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #9b59b6;
+      color: white;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 100;
+    }
+    .menu-btn:hover { background: #8e44ad; }
+    .loading, .success { 
+      text-align: center; 
+      padding: 24px; 
+      display: none; 
+    }
+    .success { color: #27ae60; }
+    .loading { color: #95a5a6; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Menu Button -->
+  <button class="menu-btn" id="menuBtn">☰</button>
+
+  <!-- Screen 1: Sad Intro -->
+  <div class="screen" id="introScreen">
+    <div class="screen-content">
+      <h1>⚽ Juan Pablo's Problem</h1>
+      <p>Juan Pablo se encontra em uma sinuca de bico. A pelada que ele conhecia já era, chuva arruinou o solo.</p>
+      <p>Em tempos como esse, ele precisa URGENTEMENTE achar um novo lugar. Você acha que pode ajudar ele?.</p>
+      <button id="toInstructions">Sim</button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Context -->
+  <div class="screen" id="instructionsScreen">
+    <div class="screen-content">
+      <h1>A solução</h1>
+      <p>Ele tem exigências:</p>
+      <ul style="text-align: left; padding-left: 20px;">
+        <li>O lugar deve ter algum tipo de cobertura em caso de chuva</li>
+        <li>Bem frequentado</li>
+        <li>O campo não deve ser grande demais</li>
+      </ul>
+      <p>Que lugares <em>você</em> acha que cumprem esses requisitos? Adicione eles a lista de Juan Pablo!</p>
+      <button id="toForm">Adicionar ideia</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: The Journal Entry Form -->
+  <div class="screen" id="formScreen">
+    <div class="screen-content">
+      <h1>Adicione um lugar</h1>
+      <p>Descreva um lugar que você sabe que Juan Pablo gostaria de jogar:</p>
+      
+      <form id="suggestionForm" class="form-group">
+        <label for="location">Lugar:</label>
+        <input 
+          type="text" 
+          id="location" 
+          placeholder="Sei lá não gosto de futebol"
+          required
+          autocomplete="off"
+        >
+        <button type="submit">Adionar a lista</button>
+      </form>
+      
+      <div class="loading" id="formLoading">Salvando a lista...</div>
+      <div class="success" id="formSuccess">Salvo!</div>
+    </div>
+  </div>
+
+  <!-- Screen 4: Juan Pablo's Personal Journal -->
+  <div class="screen" id="resultsScreen">
+    <div class="screen-content">
+      <h1>Lista de Juan Pablo   </h1>
+      <p>Os lugares que ele anotou até então:</p>
+      <div id="resultsContainer" class="results-list"></div>
+      <button id="backToForm">← Adicione outra ideia</button>
+      <button id="clearJournal">🗑️ Limpar lista</button>
+    </div>
+  </div>
+
+  <script>
+    console.log("🔥 JUAN PABLO JS STARTING..."); // TEMP LOG: VERIFY JS LOADS
+    
+    // State
+    let currentScreen = 'intro';
+    
+    // DOM Elements - VERIFY THESE IDS MATCH HTML EXACTLY
+    const screens = {
+      intro: document.getElementById('introScreen'),
+      instructions: document.getElementById('instructionsScreen'),
+      form: document.getElementById('formScreen'),
+      results: document.getElementById('resultsScreen')
+    };
+    console.log("🔍 Screen elements:", Object.values(screens).map(s => s ? s.id : "NULL")); // TEMP LOG
+    
+    const menuBtn = document.getElementById('menuBtn');
+    const formLoading = document.getElementById('formLoading');
+    const formSuccess = document.getElementById('formSuccess');
+    const suggestionForm = document.getElementById('suggestionForm');
+    const locationInput = document.getElementById('location');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const toInstructionsBtn = document.getElementById('toInstructions');
+    const toFormBtn = document.getElementById('toForm');
+    const backToFormBtn = document.getElementById('backToForm');
+    const clearJournalBtn = document.getElementById('clearJournal');
+    
+    console.log("🔍 All elements checked:", 
+      !menuBtn ? "menuBtn NULL" : "",
+      !formLoading ? "formLoading NULL" : "",
+      !formSuccess ? "formSuccess NULL" : "",
+      !suggestionForm ? "suggestionForm NULL" : "",
+      !locationInput ? "locationInput NULL" : "",
+      !resultsContainer ? "resultsContainer NULL" : "",
+      !toInstructionsBtn ? "toInstructionsBtn NULL" : "",
+      !toFormBtn ? "toFormBtn NULL" : "",
+      !backToFormBtn ? "backToFormBtn NULL" : "",
+      !clearJournalBtn ? "clearJournalBtn NULL" : ""
+    ); // TEMP LOG
+
+    // Screen navigation
+    function showScreen(screenId) {
+      console.log("🎯 Attempting to show screen:", screenId); // TEMP LOG
+      Object.values(screens).forEach(screen => {
+        if (screen) screen.classList.remove('active');
+      });
+      const targetScreen = screens[screenId];
+      if (targetScreen) {
+        targetScreen.classList.add('active');
+        currentScreen = screenId;
+        console.log("✅ Successfully showed screen:", screenId); // TEMP LOG
+      } else {
+        console.error("❌ Tried to show non-existent screen:", screenId); // TEMP LOG
+      }
+    }
+
+    // Menu button: toggle between form and results
+    menuBtn.addEventListener('click', () => {
+      console.log("📱 Menu button clicked"); // TEMP LOG
+      if (currentScreen === 'results') {
+        showScreen('form');
+      } else {
+        showScreen('results');
+      }
+    });
+
+    // Save to localStorage
+    function saveSpots(spots) {
+      localStorage.setItem('juanPabloSoccerSpots', JSON.stringify(spots));
+    }
+
+    // Load from localStorage
+    function loadSpots() {
+      const data = localStorage.getItem('juanPabloSoccerSpots');
+      return data ? JSON.parse(data) : [];
+    }
+
+    // Form submission
+    suggestionForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const location = locationInput.value.trim();
+      if (!location) return;
+
+      formLoading.style.display = 'block';
+      formSuccess.style.display = 'none';
+      suggestionForm.disabled = true;
+
+      try {
+        const spots = loadSpots();
+        spots.push({
+          text: location,
+          timestamp: new Date().toISOString()
+        });
+        saveSpots(spots);
+
+        formLoading.style.display = 'none';
+        formSuccess.style.display = 'block';
+        suggestionForm.reset();
+        
+        setTimeout(() => {
+          formSuccess.style.display = 'none';
+          suggestionForm.disabled = false;
+        }, 3000);
+        
+        loadAndDisplaySpots(); // Refresh display immediately
+      } catch (err) {
+        console.error('❌ Save failed:', err);
+        formLoading.style.display = 'none';
+        formSuccess.style.display = 'block';
+        formSuccess.textContent = 'Oops! Try again?';
+        suggestionForm.disabled = false;
+      }
+    });
+
+    // Load and display journal
+    function loadAndDisplaySpots() {
+      const spots = loadSpots();
+      console.log("📊 Loaded spots from localStorage:", spots.length); // TEMP LOG
+      
+      if (spots.length === 0) {
+        resultsContainer.innerHTML = '<div class="no-results">Juan Pablo\'s journal is empty — be the first to add an idea!</div>';
+        return;
+      }
+
+      const sortedSpots = [...spots].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+
+      resultsContainer.innerHTML = sortedSpots
+        .map(spot => {
+          const date = new Date(spot.timestamp);
+          const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          return `<div class="result-item">
+                    <div class="spot-text">${escapeHtml(spot.text)}</div>
+                    <div class="spot-time" style="font-size: 0.8em; color: #7f8c8d; margin-top: 4px;">Added at ${timeStr}</div>
+                  </div>`;
+        })
+        .join('');
+    }
+
+    // Clear journal
+    clearJournalBtn.addEventListener('click', () => {
+      if (confirm('Quer limpar a lista de Juan Pablo? Isso não pode ser desfeito.')) {
+        localStorage.removeItem('juanPabloSoccerSpots');
+        loadAndDisplaySpots();
+      }
+    });
+
+    // Helper: Escape HTML
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Event listeners for navigation
+    toInstructionsBtn.addEventListener('click', () => showScreen('instructions'));
+    toFormBtn.addEventListener('click', () => showScreen('form'));
+    backToFormBtn.addEventListener('click', () => showScreen('form'));
+
+    // Load results when results screen is shown
+    screens.results.addEventListener('show', loadAndDisplaySpots);
+    screens.results.addEventListener('click', () => {
+      if (resultsContainer.innerHTML === '') loadAndDisplaySpots();
+    });
+
+    // START AT INTRO SCREEN - THIS IS CRITICAL
+    console.log("🚀 About to show intro screen"); // TEMP LOG
+    showScreen('intro');
+    console.log("🎉 JS INITIALIZATION COMPLETE"); // TEMP LOG
+  </script>
+</body>
+</html>
